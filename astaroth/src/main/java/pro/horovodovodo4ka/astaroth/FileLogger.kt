@@ -25,11 +25,11 @@ class FileLogger(private val filename: String, override var config: Config = Con
 
     private val file = FileOutputStream(File(filename))
 
-    override fun log(message: Any, level: LogLevel, type: LogType) {
+    override fun log(message: Lazy<Any>, level: LogLevel, type: LogType) {
         if (!isAbleToLog(level, type)) return
         val tag = type.logTag
         val prefix = levels.getValue(level)
-        val stringMessage = "\\u{001b}[38;5;$prefix[$tag] $message\\u{001b}[0m\r\n"
+        val stringMessage = "\\u{001b}[38;5;$prefix[$tag] ${message.value}\\u{001b}[0m\r\n"
         file.write(stringMessage.toByteArray())
     }
 

@@ -23,7 +23,7 @@ interface LogType {
         get() = this::class.simpleName!!
 }
 
-typealias LoggerRecord = Triple<Any, LogLevel, LogType>
+typealias LoggerRecord = Triple<Lazy<Any>, LogLevel, LogType>
 
 interface Logger {
     data class Config(
@@ -33,7 +33,7 @@ interface Logger {
         var contextFormat: String? = null
     )
 
-    fun log(message: Any, level: LogLevel, type: LogType)
+    fun log(message: Lazy<Any>, level: LogLevel, type: LogType)
 
     var config: Config
 }
@@ -82,28 +82,35 @@ object Log : Logger {
         }
     }
 
-    override fun log(message: Any, level: LogLevel, type: LogType) {
+    override fun log(message: Lazy<Any>, level: LogLevel, type: LogType) {
         if (!isAbleToLog(level, type)) return
 
-        Scope.launch { logChannel.send(Triple(message, level, type)) }
+        Scope.launch { logChannel.send(LoggerRecord(message, level, type)) }
     }
 
-    internal fun log(message: Any, level: LogLevel, type: LogType, context: StackTraceElement?) {
-        log("${config.format(context)} $message", level, type)
+    internal fun log(message: Lazy<Any>, level: LogLevel, type: LogType, context: StackTraceElement?) {
+        log(lazy { "${config.format(context)} ${message.value}" }, level, type)
     }
 }
 
 private fun Config.format(traceElement: StackTraceElement?): String {
     traceElement ?: return ""
-    return "${traceElement.className}.${traceElement.methodName}:${traceElement.lineNumber}"
+    return "${traceElement.fileName}:${traceElement.lineNumber} (${traceElement.methodName})"
 }
 
 operator fun Log.plusAssign(logger: Logger) = addLoggers(logger)
 operator fun Log.minusAssign(logger: Logger) = removeLoggers(logger)
 
-fun Log.v(type: LogType, message: Any) = log(message = message, level = Verbose, type = type, context = Throwable().stackTrace.getOrNull(1))
-fun Log.d(type: LogType, message: Any) = log(message = message, level = Debug, type = type, context = Throwable().stackTrace.getOrNull(1))
-fun Log.i(type: LogType, message: Any) = log(message = message, level = Info, type = type, context = Throwable().stackTrace.getOrNull(1))
-fun Log.w(type: LogType, message: Any) = log(message = message, level = Warning, type = type, context = Throwable().stackTrace.getOrNull(1))
-fun Log.e(type: LogType, message: Any) = log(message = message, level = Error, type = type, context = Throwable().stackTrace.getOrNull(1))
-fun Log.wtf(type: LogType, message: Any) = log(message = message, level = WhatTheFuck, type = type, context = Throwable().stackTrace.getOrNull(1))
+fun Log.v(type: LogType, message: Any) = log(message = lazy { message }, level = Verbose, type = type, context = Throwable().stackTrace.getOrNull(1))
+fun Log.d(type: LogType, message: Any) = log(message = lazy { message }, level = Debug, type = type, context = Throwable().stackTrace.getOrNull(1))
+fun Log.i(type: LogType, message: Any) = log(message = lazy { message }, level = Info, type = type, context = Throwable().stackTrace.getOrNull(1))
+fun Log.w(type: LogType, message: Any) = log(message = lazy { message }, level = Warning, type = type, context = Throwable().stackTrace.getOrNull(1))
+fun Log.e(type: LogType, message: Any) = log(message = lazy { message }, level = Error, type = type, context = Throwable().stackTrace.getOrNull(1))
+fun Log.wtf(type: LogType, message: Any) = log(message = lazy { message }, level = WhatTheFuck, type = type, context = Throwable().stackTrace.getOrNull(1))
+
+fun Log.v(type: LogType, context: StackTraceElement? = Throwable().stackTrace.getOrNull(1), lazyMessage: () -> Any) = log(message = lazy(lazyMessage), level = Verbose, type = type, context = context)
+fun Log.d(type: LogType, context: StackTraceElement? = Throwable().stackTrace.getOrNull(1), lazyMessage: () -> Any) = log(message = lazy(lazyMessage), level = Debug, type = type, context = context)
+fun Log.i(type: LogType, context: StackTraceElement? = Throwable().stackTrace.getOrNull(1), lazyMessage: () -> Any) = log(message = lazy(lazyMessage), level = Info, type = type, context = context)
+fun Log.w(type: LogType, context: StackTraceElement? = Throwable().stackTrace.getOrNull(1), lazyMessage: () -> Any) = log(message = lazy(lazyMessage), level = Warning, type = type, context = context)
+fun Log.e(type: LogType, context: StackTraceElement? = Throwable().stackTrace.getOrNull(1), lazyMessage: () -> Any) = log(message = lazy(lazyMessage), level = Error, type = type, context = context)
+fun Log.wtf(type: LogType, context: StackTraceElement? = Throwable().stackTrace.getOrNull(1), lazyMessage: () -> Any) = log(message = lazy(lazyMessage), level = WhatTheFuck, type = type, context = context)

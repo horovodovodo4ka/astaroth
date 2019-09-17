@@ -25,13 +25,13 @@ private fun LogLevel.systemLevel(): Int = when (this) {
 }
 
 class ConsoleLogger(override var config: Config = Config()) : Logger {
-    override fun log(message: Any, level: LogLevel, type: LogType) {
+    override fun log(message: Lazy<Any>, level: LogLevel, type: LogType) {
         if (!isAbleToLog(level, type)) return
 
         val tag = type.logTag
         val systemLevel = level.systemLevel()
 
-        Log.println(systemLevel, tag, message.toString())
+        Log.println(systemLevel, tag, message.value.toString())
     }
 
     override fun toString(): String = "ConsoleLogger: $config"
