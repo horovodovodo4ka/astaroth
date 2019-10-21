@@ -1,5 +1,5 @@
 apply plugin: 'kotlin'
-apply plugin: 'maven'
+apply plugin: 'maven-publish'
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
@@ -11,5 +11,4 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-reflect:1.3.50")
 }
 
-// for jitpack - https://github.com/sky-uk/gradle-maven-plugin#usage
-apply from: "https://raw.githubusercontent.com/sky-uk/gradle-maven-plugin/master/gradle-mavenizer.gradle"
+apply from: "${rootDir}/mavenizer/gradle-mavenizer.gradle"
