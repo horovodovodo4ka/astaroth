@@ -1,2 +1,4 @@
-include ':astaroth', ':example'
+if (System.getenv("JITPACK") != null) include ':astaroth', ':astaroth-android'
+else include ':astaroth', ':astaroth-android', ':example'
+
 rootProject.name='Astaroth'
