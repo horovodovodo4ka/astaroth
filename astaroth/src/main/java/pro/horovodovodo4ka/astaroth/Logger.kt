@@ -51,19 +51,27 @@ object Log : Logger {
     private val loggers = mutableSetOf<Logger>()
 
     fun addLoggers(vararg loggers: Logger) {
-        Log.loggers.addAll(loggers)
+        synchronized(this.loggers) {
+            this.loggers.addAll(loggers)
+        }
     }
 
     fun removeLoggers(vararg loggers: Logger) {
-        Log.loggers.removeAll(loggers)
+        synchronized(this.loggers) {
+            this.loggers.removeAll(loggers)
+        }
     }
 
     fun allowType(type: LogType) {
-        config.allowedTypes.add(type)
+        synchronized(this.config) {
+            config.allowedTypes.add(type)
+        }
     }
 
     fun disallowType(type: LogType) {
-        config.disallowedTypes.add(type)
+        synchronized(this.config) {
+            config.disallowedTypes.add(type)
+        }
     }
 
     private object Scope : CoroutineScope {
@@ -77,7 +85,9 @@ object Log : Logger {
         Scope.launch(IO) {
             while (true) {
                 val (message, level, type) = logChannel.receive()
-                loggers.forEach { it.log(message, level, type) }
+                synchronized(loggers) {
+                    loggers.forEach { it.log(message, level, type) }
+                }
             }
         }
     }
